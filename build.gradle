@@ -15,6 +15,7 @@ project.ext.steamworks4j_serverVersion = "1.9.0"
 
 group = 'com.southpaw'
 version = '1.0-SNAPSHOT'
+//sourceCompatibility = 1.11
 
 test {
     useJUnitPlatform()
