@@ -1,6 +1,6 @@
 package com.southpaw;
 
-import com.southpaw.view.Window;
+import com.southpaw.core.Window;
 
 public class Main
 {
