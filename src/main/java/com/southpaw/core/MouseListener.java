@@ -1,4 +1,5 @@
 package com.southpaw.core;
+
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 
@@ -19,10 +20,10 @@ public class MouseListener
 	}
 
 	public static MouseListener get() {
-		if (mouseListener == null)
-			mouseListener = new MouseListener();
+		if (MouseListener.mouseListener == null)
+			MouseListener.mouseListener = new MouseListener();
 
-		return mouseListener;
+		return MouseListener.mouseListener;
 	}
 
 	public static void mousePosCallback(long window, double xpos, double ypos) {

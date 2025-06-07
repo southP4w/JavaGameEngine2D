@@ -1,68 +1,36 @@
 package com.southpaw.core;
 
-import com.southpaw.renderer.*;
-import org.lwjgl.*;
-import java.nio.*;
-import static org.lwjgl.opengl.GL11.GL_FALSE;
-import static org.lwjgl.opengl.GL11.GL_FLOAT;
-import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
-import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
-import static org.lwjgl.opengl.GL11.glDisable;
-import static org.lwjgl.opengl.GL11.glDrawElements;
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
-import static org.lwjgl.opengl.GL15.glBufferData;
-import static org.lwjgl.opengl.GL15.glGenBuffers;
-import static org.lwjgl.opengl.GL20.GL_COMPILE_STATUS;
-import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
-import static org.lwjgl.opengl.GL20.GL_INFO_LOG_LENGTH;
-import static org.lwjgl.opengl.GL20.GL_LINK_STATUS;
-import static org.lwjgl.opengl.GL20.GL_VERTEX_SHADER;
-import static org.lwjgl.opengl.GL20.glAttachShader;
-import static org.lwjgl.opengl.GL20.glCompileShader;
-import static org.lwjgl.opengl.GL20.glCreateProgram;
-import static org.lwjgl.opengl.GL20.glCreateShader;
+import org.joml.Vector2f;
+import org.lwjgl.BufferUtils;
+import com.southpaw.renderer.Shader;
+import com.southpaw.utils.Time;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glGetProgramInfoLog;
-import static org.lwjgl.opengl.GL20.glGetProgrami;
-import static org.lwjgl.opengl.GL20.glGetShaderInfoLog;
-import static org.lwjgl.opengl.GL20.glGetShaderi;
-import static org.lwjgl.opengl.GL20.glLinkProgram;
-import static org.lwjgl.opengl.GL20.glShaderSource;
-import static org.lwjgl.opengl.GL20.glUseProgram;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import static org.lwjgl.opengl.GL20.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL20.GL_ELEMENT_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL20.GL_FLOAT;
+import static org.lwjgl.opengl.GL20.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL20.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL20.GL_UNSIGNED_INT;
+import static org.lwjgl.opengl.GL20.glBindBuffer;
+import static org.lwjgl.opengl.GL20.glBufferData;
+import static org.lwjgl.opengl.GL20.glDrawElements;
+import static org.lwjgl.opengl.GL20.glGenBuffers;
+
 public class LevelEditorScene extends Scene
 {
-	private String vertexShaderSrc = "#version 330 core\n" +
-		"layout (location=0) in vec3 aPos;\n" +
-		"layout (location=1) in vec4 aColor;\n" +
-		"\n" +
-		"out vec4 fColor;\n" +
-		"\n" +
-		"void main() {\n" +
-		"    fColor = aColor;\n" +
-		"    gl_Position = vec4(aPos, 1.0);\n" +
-		"}", fragmentShaderSrc = "#version 330 core\n" +
-		"\n" +
-		"in vec4 fColor;\n" +
-		"\n" +
-		"out vec4 color;\n" +
-		"\n" +
-		"void main() {\n" +
-		"    color = fColor;\n" +
-		"}";
-
 	private int vertexID, fragmentID, shaderProgram;
+
 	private float[] vertexArray = {
-		 0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f, 1.0f,	// bottom-right	(0)
-		-0.5f,  0.5f, 0.0f,		0.0f, 1.0f, 0.0f, 1.0f,	// top-left		(1)
-		 0.5f,  0.5f, 0.0f,		0.0f, 0.0f, 1.0f, 1.0f,	// top-right	(2)
-		-0.5f, -0.5f, 0.0f,		1.0f, 1.0f, 0.0f, 1.0f	// bottom-left	(3)
+		 100.5f, .5f, 0.0f,		1.0f, 0.0f, 0.0f, 1.0f,	// bottom-right	(0)
+		.5f,  100.5f, 0.0f,		0.0f, 1.0f, 0.0f, 1.0f,	// top-left		(1)
+		 100.5f,  100.5f, 0.0f,		0.0f, 0.0f, 1.0f, 1.0f,	// top-right	(2)
+		.5f, .5f, 0.0f,		1.0f, 1.0f, 0.0f, 1.0f	// bottom-left	(3)
 	};
 	private int[] elementArray = {
 		/**
@@ -83,6 +51,7 @@ public class LevelEditorScene extends Scene
 
 	@Override
 	public void init() {
+		this.camera = new Camera(new Vector2f(-200, -300));
 		defaultShader = new Shader("assets/shaders/default.glsl");
 		defaultShader.compile();
 		/* Generate VAO, VBO, EBO buffer objects and send them to the GPU */
@@ -109,7 +78,12 @@ public class LevelEditorScene extends Scene
 
 	@Override
 	public void update(float deltaTime) {
+		camera.position.x -= deltaTime * 50f;
+		camera.position.y -= deltaTime * 20f;
 		defaultShader.use();
+		defaultShader.uploadMat4f("uProjection", camera.getProjectionMatrix());
+		defaultShader.uploadMat4f("uView", camera.getViewMatrix());
+		defaultShader.uploadFloat("uTime", Time.getTime());
 		glBindVertexArray(vaoID);			// bind the VAO we're using
 		glEnableVertexAttribArray(0);	// enable the vertex attribute pointers
 		glEnableVertexAttribArray(1);
